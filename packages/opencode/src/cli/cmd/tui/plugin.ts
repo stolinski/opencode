@@ -13,7 +13,6 @@ import { Log } from "@/util/log"
 import { BunProc } from "@/bun"
 import { Instance } from "@/project/instance"
 import { registerThemes } from "./context/theme"
-import { existsSync } from "fs"
 
 export namespace TuiPlugin {
   const log = Log.create({ service: "tui.plugin" })
@@ -47,14 +46,7 @@ export namespace TuiPlugin {
   }
 
   async function load(input: TuiPluginInput) {
-    const base = input.directory ?? process.cwd()
-    const dir = existsSync(base) ? base : process.cwd()
-    if (dir !== base) {
-      log.info("tui plugin directory not found, using local cwd", {
-        requested: base,
-        directory: dir,
-      })
-    }
+    const dir = process.cwd()
 
     await Instance.provide({
       directory: dir,

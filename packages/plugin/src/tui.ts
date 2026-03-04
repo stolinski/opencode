@@ -44,10 +44,7 @@ export type TuiSlotMap = {
   }
 }
 
-export type TuiSlotContext = {
-  url: string
-  directory?: string
-}
+export type TuiSlotContext = {}
 
 export type TuiSlotPlugin<Node = unknown> = SlotPlugin<Node, TuiSlotMap, TuiSlotContext>
 
@@ -65,8 +62,6 @@ export type TuiEventBus = {
 export type TuiPluginInput<Renderer = CliRenderer> = {
   client: ReturnType<typeof createOpencodeClientV2>
   event: TuiEventBus
-  url: string
-  directory?: string
   renderer: Renderer
   slots: TuiSlots
 }
