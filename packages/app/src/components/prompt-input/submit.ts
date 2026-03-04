@@ -2,7 +2,7 @@ import type { Message } from "@opencode-ai/sdk/v2/client"
 import { showToast } from "@opencode-ai/ui/toast"
 import { base64Encode } from "@opencode-ai/util/encode"
 import { useNavigate, useParams } from "@solidjs/router"
-import type { Accessor } from "solid-js"
+import { batch, type Accessor } from "solid-js"
 import type { FileSelection } from "@/context/file"
 import { useGlobalSync } from "@/context/global-sync"
 import { useLanguage } from "@/context/language"
@@ -332,9 +332,14 @@ export function createPromptSubmit(input: PromptSubmitInput) {
         messageID,
       })
 
-    removeCommentItems(commentItems)
-    clearInput()
-    addOptimisticMessage()
+    batch(() => {
+      removeCommentItems(commentItems)
+      clearInput()
+      if (sessionDirectory === projectDirectory) {
+        sync.set("session_status", session.id, { type: "busy" })
+      }
+      addOptimisticMessage()
+    })
 
     const waitForWorktree = async () => {
       const worktree = WorktreeState.get(sessionDirectory)

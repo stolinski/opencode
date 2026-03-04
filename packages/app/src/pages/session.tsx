@@ -118,13 +118,13 @@ function createSessionHistoryWindow(input: SessionHistoryWindowInput) {
       return
     }
     const beforeTop = el.scrollTop
-    const beforeHeight = el.scrollHeight
     fn()
-    requestAnimationFrame(() => {
-      const delta = el.scrollHeight - beforeHeight
-      if (!delta) return
-      el.scrollTop = beforeTop + delta
-    })
+    // SolidJS updates the DOM synchronously. Force reflow so the browser
+    // processes the new layout, then restore scrollTop before paint.
+    // With column-reverse + overflow-anchor:none the same scrollTop value
+    // keeps the same distance from the bottom — no delta math needed.
+    void el.scrollHeight
+    el.scrollTop = beforeTop
   }
 
   const backfillTurns = () => {
@@ -207,7 +207,8 @@ function createSessionHistoryWindow(input: SessionHistoryWindowInput) {
     if (!input.userScrolled()) return
     const el = input.scroller()
     if (!el) return
-    if (el.scrollTop >= turnScrollThreshold) return
+    // With column-reverse, distance from top = scrollHeight - clientHeight + scrollTop
+    if (el.scrollHeight - el.clientHeight + el.scrollTop >= turnScrollThreshold) return
 
     const start = turnStart()
     if (start > 0) {
@@ -285,7 +286,6 @@ export default function Page() {
       bottom: true,
     },
   })
-
   const composer = createSessionComposerState()
 
   const sessionKey = createMemo(() => `${params.dir}${params.id ? "/" + params.id : ""}`)
@@ -1056,7 +1056,10 @@ export default function Page() {
   const updateScrollState = (el: HTMLDivElement) => {
     const max = el.scrollHeight - el.clientHeight
     const overflow = max > 1
-    const bottom = !overflow || el.scrollTop >= max - 2
+    // If auto-scroll is tracking the bottom, always report bottom: true
+    // to prevent the scroll-down arrow from flashing during height animations
+    // With column-reverse, scrollTop=0 is at the bottom
+    const bottom = !overflow || Math.abs(el.scrollTop) <= 2 || !autoScroll.userScrolled()
 
     if (ui.scroll.overflow === overflow && ui.scroll.bottom === bottom) return
     setUi("scroll", { overflow, bottom })
@@ -1079,7 +1082,7 @@ export default function Page() {
 
   const resumeScroll = () => {
     setStore("messageId", undefined)
-    autoScroll.forceScrollToBottom()
+    autoScroll.smoothScrollToBottom()
     clearMessageHash()
 
     const el = scroller
@@ -1147,9 +1150,8 @@ export default function Page() {
 
       const el = scroller
       const delta = next - dockHeight
-      const stick = el
-        ? !autoScroll.userScrolled() || el.scrollHeight - el.clientHeight - el.scrollTop < 10 + Math.max(0, delta)
-        : false
+      // With column-reverse, near bottom = scrollTop near 0
+      const stick = el ? Math.abs(el.scrollTop) < 10 + Math.max(0, delta) : false
 
       dockHeight = next
 

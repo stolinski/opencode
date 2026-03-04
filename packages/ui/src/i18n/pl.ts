@@ -98,6 +98,7 @@ export const dict = {
   "ui.tool.todos": "Zadania",
   "ui.tool.todos.read": "Czytaj zadania",
   "ui.tool.questions": "Pytania",
+  "ui.tool.skill": "Umiejętność",
   "ui.tool.agent": "Agent {{type}}",
 
   "ui.common.file.one": "plik",

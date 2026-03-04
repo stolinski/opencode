@@ -1,7 +1,7 @@
 import { For, Index, createEffect, createMemo, createSignal, on } from "solid-js"
 
 const TRACK = Array.from({ length: 30 }, (_, index) => index % 10)
-const DURATION = 600
+const DURATION = 800
 
 function normalize(value: number) {
   return ((value % 10) + 10) % 10

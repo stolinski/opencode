@@ -1,5 +1,6 @@
-import { createEffect, createMemo, createSignal, onCleanup, type ValidComponent } from "solid-js"
+import { createEffect, createMemo, createSignal, on, onCleanup, type ValidComponent } from "solid-js"
 import { Dynamic } from "solid-js/web"
+import { animate, type AnimationPlaybackControls, GLOW_SPRING } from "./motion"
 
 export const TextShimmer = <T extends ValidComponent = "span">(props: {
   text: string
@@ -31,9 +32,43 @@ export const TextShimmer = <T extends ValidComponent = "span">(props: {
     }, swap)
   })
 
+  let baseRef: HTMLSpanElement | undefined
+  let glowAnim: AnimationPlaybackControls | undefined
+
+  // Glow pulse when shimmer deactivates
+  createEffect(
+    on(active, (isActive) => {
+      if (isActive || !baseRef) return
+      glowAnim?.stop()
+      glowAnim = animate(
+        baseRef,
+        { filter: ["brightness(1.5)", "brightness(1)"] },
+        GLOW_SPRING,
+      )
+      glowAnim.finished.then(() => {
+        if (!baseRef) return
+        baseRef.style.filter = ""
+      })
+    }, { defer: true }),
+  )
+
   onCleanup(() => {
+    glowAnim?.stop()
     if (!timer) return
     clearTimeout(timer)
+  })
+
+  const shimmerSize = createMemo(() => {
+    const len = Math.max(props.text.length, 1)
+    return Math.max(300, Math.round(200 + 1400 / len))
+  })
+
+  // duration = len × (size - 1) / velocity → uniform perceived sweep speed
+  const VELOCITY = 0.0125 // ch per ms, calibrated to "Shell" at 600%/2000ms
+  const shimmerDuration = createMemo(() => {
+    const len = Math.max(props.text.length, 1)
+    const s = shimmerSize() / 100
+    return Math.max(1000, Math.min(2500, Math.round((len * (s - 1)) / VELOCITY)))
   })
 
   return (
@@ -46,10 +81,12 @@ export const TextShimmer = <T extends ValidComponent = "span">(props: {
       style={{
         "--text-shimmer-swap": `${swap}ms`,
         "--text-shimmer-index": `${offset()}`,
+        "--text-shimmer-size": `${shimmerSize()}%`,
+        "--text-shimmer-duration": `${shimmerDuration()}ms`,
       }}
     >
       <span data-slot="text-shimmer-char">
-        <span data-slot="text-shimmer-char-base" aria-hidden="true">
+        <span ref={baseRef} data-slot="text-shimmer-char-base" aria-hidden="true">
           {props.text}
         </span>
         <span data-slot="text-shimmer-char-shimmer" data-run={run() ? "true" : "false"} aria-hidden="true">
