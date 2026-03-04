@@ -71,31 +71,30 @@ export namespace TuiPlugin {
           if (!mod) continue
 
           const seen = new Set<unknown>()
-          for (const entry of Object.values<TuiPluginModule>(mod)) {
+          for (const [name, entry] of Object.entries(mod)) {
             if (seen.has(entry)) continue
             seen.add(entry)
+            if (!entry || typeof entry !== "object") {
+              log.warn("ignoring non-object tui plugin export", {
+                path: spec,
+                name,
+                type: entry === null ? "null" : typeof entry,
+              })
+              continue
+            }
 
-            const themes = (() => {
-              if (!entry || typeof entry !== "object") return
-              if (!("themes" in entry)) return
-              if (!entry.themes || typeof entry.themes !== "object") return
-              return entry.themes as Record<string, unknown>
-            })()
-            if (themes) registerThemes(themes)
+            const pluginEntry = entry as TuiPluginModule
+            if (pluginEntry.themes && typeof pluginEntry.themes === "object") {
+              registerThemes(pluginEntry.themes as Record<string, unknown>)
+            }
 
-            const plugin = slot(entry)
+            const plugin = slot(pluginEntry)
             if (plugin) {
               input.slots.register(plugin)
             }
 
-            const tui = (() => {
-              if (!entry || typeof entry !== "object") return
-              if (!("tui" in entry)) return
-              if (typeof entry.tui !== "function") return
-              return entry.tui as TuiPluginFn
-            })()
-            if (!tui) continue
-            await tui(input, Config.pluginOptions(item))
+            if (!pluginEntry.tui || typeof pluginEntry.tui !== "function") continue
+            await (pluginEntry.tui as TuiPluginFn)(input, Config.pluginOptions(item))
           }
         }
       },

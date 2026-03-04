@@ -57,11 +57,9 @@ export type TuiPlugin<Renderer = CliRenderer> = (
   options?: PluginOptions,
 ) => Promise<void>
 
-export type TuiPluginModule<Renderer = CliRenderer> =
-  | TuiPlugin<Renderer>
-  | {
-      server?: ServerPlugin
-      tui?: TuiPlugin<Renderer>
-      slots?: TuiSlotPlugin
-      themes?: Record<string, ThemeJson>
-    }
+export type TuiPluginModule<Renderer = CliRenderer> = {
+  server?: ServerPlugin
+  tui?: TuiPlugin<Renderer>
+  slots?: TuiSlotPlugin
+  themes?: Record<string, ThemeJson>
+}
