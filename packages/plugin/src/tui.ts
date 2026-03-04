@@ -1,8 +1,8 @@
 import type { createOpencodeClient as createOpencodeClientV2, Event as TuiEvent } from "@opencode-ai/sdk/v2"
-import type { CliRenderer } from "@opentui/core"
-import type { Plugin, PluginOptions } from "./index"
+import type { CliRenderer, Plugin as CorePlugin } from "@opentui/core"
+import type { Plugin as ServerPlugin, PluginOptions } from "./index"
 
-export type { CliRenderer } from "@opentui/core"
+export type { CliRenderer, SlotMode } from "@opentui/core"
 
 type HexColor = `#${string}`
 type RefName = string
@@ -22,20 +22,6 @@ export type ThemeJson = {
   }
 }
 
-export type SlotMode = "append" | "replace" | "single_winner"
-
-type SlotRenderer<Node, Props, Context extends object = object> = (ctx: Readonly<Context>, props: Props) => Node
-
-type SlotPlugin<Node, Slots extends object, Context extends object = object> = {
-  id: string
-  order?: number
-  setup?: (ctx: Readonly<Context>, renderer: CliRenderer) => void
-  dispose?: () => void
-  slots: {
-    [K in keyof Slots]?: SlotRenderer<Node, Slots[K], Context>
-  }
-}
-
 export type TuiSlotMap = {
   home_hint: {}
   home_footer: {}
@@ -46,7 +32,7 @@ export type TuiSlotMap = {
 
 export type TuiSlotContext = {}
 
-export type TuiSlotPlugin<Node = unknown> = SlotPlugin<Node, TuiSlotMap, TuiSlotContext>
+export type TuiSlotPlugin<Node = unknown> = CorePlugin<Node, TuiSlotMap, TuiSlotContext>
 
 export type TuiSlots = {
   register: (plugin: TuiSlotPlugin) => () => void
@@ -74,7 +60,7 @@ export type TuiPlugin<Renderer = CliRenderer> = (
 export type TuiPluginModule<Renderer = CliRenderer> =
   | TuiPlugin<Renderer>
   | {
-      server?: Plugin
+      server?: ServerPlugin
       tui?: TuiPlugin<Renderer>
       slots?: TuiSlotPlugin
       themes?: Record<string, ThemeJson>
